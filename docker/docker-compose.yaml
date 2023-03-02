@@ -1,0 +1,61 @@
+version: '3.5'
+services:
+  dev-app:
+    build:
+      context: .
+      dockerfile: ./php/DockerFile
+    container_name: phpfpm
+    restart: unless-stopped
+    tty: true
+    working_dir: /var/www
+    volumes:
+    - ../:/var/www
+    - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - app-network
+  #nginx
+  dev-server:
+    image: nginx
+    container_name: dev-server
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8080:80"
+    volumes:
+     - ./server/conf.d:/etc/nginx/conf.d
+     - ../:/var/www
+    networks:
+      - app-network
+
+  #MySQL Service
+  dev-db:
+    image: mysql:5.7.22
+    container_name: dev-db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "33006:3306"
+    environment:
+      MYSQL_DATABASE: mysql_db_1
+      MYSQL_ROOT_PASSWORD: MYSQL_ROOT_PASSWORD
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./db/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - app-network
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+  
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge
+
+#Volumes
+volumes:
+  dbdata:
+    driver: local
